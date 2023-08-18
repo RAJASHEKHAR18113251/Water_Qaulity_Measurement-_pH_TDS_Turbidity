@@ -1,0 +1,113 @@
+#include <U8glib.h> // Include the U8g library
+//tx
+#include <SoftwareSerial.h>
+#include <AltSoftSerial.h>
+SoftwareSerial ReyaxLoRa(2,3);
+
+//Declarations for tds meter
+    #define SERIAL Serial
+    #define sensorPin A0
+    int sensorValue = 0;
+    float tdsValue = 0;
+    float Voltage = 0;
+// Code for Turbidity
+    int TurbidityPin = A1;
+//Code for pH Measurement
+    int pHsensor =A3;
+U8GLIB_SH1106_128X64 u8g(U8G_I2C_OPT_NONE); // Initialize the U8g library with your OLED's configuration
+
+float readtds() 
+{
+  
+   sensorValue = analogRead(sensorPin);
+    Voltage = sensorValue*5/1024.0; //Convert analog reading to Voltage
+    tdsValue=(133.42*Voltage*Voltage*Voltage - 255.86*Voltage*Voltage + 857.39*Voltage)*0.5; //Convert voltage value to TDS value
+    Serial.print("TDS Value = "); 
+    Serial.print(tdsValue);
+    Serial.println(" ppm");
+    return tdsValue;
+    delay(1000);
+    
+}
+float readph() 
+{
+    float pH=analogRead(A3);//for ph printed board bread board version has A2
+    float volt=((float)pH*4.11/1023);//value of 5 is put as as 4.11 by formula
+    float ph_act = (3.5 * volt);//-0.30 is done for previous one
+    Serial.println("pH Value is: ");
+    Serial.println(ph_act);
+    return ph_act;
+    delay(1000);
+}
+int readtur() 
+{
+    int sensorValue = analogRead(A1);//out put pin in bread board version is A1
+    int turbidity = map(sensorValue, 0,900, 100, 0); 
+    Serial.println("turbidity:");
+    Serial.println(turbidity);
+    return turbidity;
+    delay(100);
+}
+
+void displayTDSvalue(float tdsValue) 
+{
+  u8g.firstPage();
+  do {
+    u8g.setFont(u8g_font_unifont);
+    u8g.drawStr(0, 15, "Tds:");
+    u8g.setFont(u8g_font_fub30n);
+    char tempStr[10];
+    dtostrf(tdsValue, 4, 2, tempStr); // Convert float to string
+    u8g.drawStr(0, 50, tempStr);
+  } while (u8g.nextPage());
+}
+
+void displaypHvalue(float ph_act) 
+{
+  u8g.firstPage();
+  do {
+    u8g.setFont(u8g_font_unifont);
+    u8g.drawStr(0, 15, "ph value:");
+    u8g.setFont(u8g_font_fub30n);
+    char lightStr[10];
+    dtostrf(ph_act, 4, 2, lightStr);// Convert integer to string
+    u8g.drawStr(0, 50, lightStr);
+  } while (u8g.nextPage());
+}
+void displayturbity(int tur) {
+  u8g.firstPage();
+  do {
+    u8g.setFont(u8g_font_unifont);
+    u8g.drawStr(0, 15, "turbity value:");
+    u8g.setFont(u8g_font_fub30n);
+    char truStr[10];
+    itoa(tur, truStr, 10); // Convert integer to string
+    u8g.drawStr(0, 50, truStr);
+  } while (u8g.nextPage());
+}
+
+void setup() 
+{
+  // Your sensor setup code here
+  // Initialize Serial communication if needed
+  Serial.begin(9600);
+  ReyaxLoRa.begin(9600);
+  // Initialize OLED
+  u8g.setFont(u8g_font_unifont);
+}
+
+void loop() 
+{
+  // Reading sensor values
+  float tdsvalue = readtds(); 
+  float ph_act = readph(); 
+  int tur=readtur();
+  
+  // Display sensor values
+  displayTDSvalue(tdsvalue);
+  delay(2000);
+  displaypHvalue(ph_act);
+  delay(2000); 
+ displayturbity(tur);
+  delay(2000); 
+}
